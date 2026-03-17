@@ -1,0 +1,83 @@
+name: 테스트
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: 단위 테스트
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Go 설정
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: libpcap 설치
+        run: sudo apt-get install -y libpcap-dev
+
+      - name: 테스트 실행
+        id: run_tests
+        run: go test -v -count=1 -json ./... > test-output.json 2>&1; echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: 테스트 결과 요약
+        if: always()
+        run: |
+          python3 << 'EOF'
+          import json, os
+
+          passed, failed, skipped = [], [], []
+
+          with open("test-output.json") as f:
+              for line in f:
+                  try:
+                      ev = json.loads(line.strip())
+                      action = ev.get("Action", "")
+                      test   = ev.get("Test", "")
+                      pkg    = ev.get("Package", "")
+                      if not test:
+                          continue
+                      label = f"{pkg} / {test}"
+                      if action == "pass":
+                          passed.append(label)
+                      elif action == "fail":
+                          failed.append(label)
+                      elif action == "skip":
+                          skipped.append(label)
+                  except Exception:
+                      pass
+
+          total  = len(passed) + len(failed) + len(skipped)
+          status = "✅ 전체 통과" if not failed else "❌ 실패 있음"
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "/dev/stdout")
+          with open(summary_path, "a", encoding="utf-8") as f:
+              f.write(f"## 테스트 결과  {status}\n\n")
+              f.write(f"| 구분 | 수량 |\n")
+              f.write(f"|------|------|\n")
+              f.write(f"| ✅ 통과 | {len(passed)} |\n")
+              f.write(f"| ❌ 실패 | {len(failed)} |\n")
+              f.write(f"| ⏭️ 건너뜀 | {len(skipped)} |\n")
+              f.write(f"| 전체 | {total} |\n\n")
+
+              if failed:
+                  f.write("### ❌ 실패한 테스트\n\n")
+                  for t in failed:
+                      f.write(f"- `{t}`\n")
+                  f.write("\n")
+
+              f.write("### ✅ 통과한 테스트\n\n")
+              for t in passed:
+                  f.write(f"- `{t}`\n")
+          EOF
+
+      - name: 테스트 실패 시 종료
+        if: steps.run_tests.outputs.exit_code != '0'
+        run: exit 1
