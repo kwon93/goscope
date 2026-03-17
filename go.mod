@@ -1,6 +1,6 @@
 module github.com/kwon93/goscope
 
-go 1.25.0
+go 1.24.0
 
 require github.com/google/gopacket v1.1.19
 
