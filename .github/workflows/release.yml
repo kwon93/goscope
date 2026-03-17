@@ -11,19 +11,15 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            goos: linux
             goarch: amd64
             output: goscope-linux-amd64
           - os: windows-latest
-            goos: windows
             goarch: amd64
             output: goscope-windows-amd64.exe
-          - os: macos-latest
-            goos: darwin
+          - os: macos-13       # Intel runner → amd64 네이티브
             goarch: amd64
             output: goscope-darwin-amd64
-          - os: macos-latest
-            goos: darwin
+          - os: macos-latest   # Apple Silicon runner → arm64 네이티브
             goarch: arm64
             output: goscope-darwin-arm64
 
@@ -51,7 +47,6 @@ jobs:
 
       - name: Build
         env:
-          GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: go build -o dist/${{ matrix.output }} ./cmd/main.go
 
