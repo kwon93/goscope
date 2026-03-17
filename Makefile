@@ -1,5 +1,5 @@
 APP     := goscope
-CMD     := ./cmd/main.go
+CMD     := ./cmd/goscope
 OUT_DIR := dist
 
 .PHONY: all linux windows darwin clean
