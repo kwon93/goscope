@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            output: goscope-linux-amd64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            output: goscope-windows-amd64.exe
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            output: goscope-darwin-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            output: goscope-darwin-arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install libpcap (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y libpcap-dev
+
+      - name: Install Npcap SDK (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile npcap-sdk.zip
+          Expand-Archive npcap-sdk.zip -DestinationPath C:\npcap-sdk
+          echo "CGO_CFLAGS=-I C:/npcap-sdk/Include" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-L C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -o dist/${{ matrix.output }} ./cmd/main.go
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: dist/${{ matrix.output }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
