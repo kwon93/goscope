@@ -13,6 +13,18 @@ Go로 개발한 CLI 기반 네트워크 패킷 분석 도구.
 
 ## 설치
 
+**바이너리 다운로드 (권장)**
+
+[GitHub Releases](https://github.com/kwon93/goscope/releases/latest)에서 OS에 맞는 파일을 내려받으세요.
+
+| OS | 파일명 |
+|----|--------|
+| Linux | `goscope-linux-amd64` |
+| macOS (Apple Silicon) | `goscope-darwin-arm64` |
+| Windows | `goscope-windows-amd64.exe` |
+
+**직접 빌드**
+
 ```bash
 git clone https://github.com/kwon93/goscope.git
 cd goscope
