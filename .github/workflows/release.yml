@@ -61,12 +61,10 @@ jobs:
     steps:
       - name: 텔레그램 알림 (릴리즈 시작)
         run: |
+          MSG=$(printf "🚀 릴리즈 시작\n태그: ${{ github.ref_name }}\n레포: ${{ github.repository }}\n🔗 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             --data-urlencode "chat_id=-1003854517077" \
-            --data-urlencode "text=🚀 릴리즈 시작
-태그: ${{ github.ref_name }}
-레포: ${{ github.repository }}
-🔗 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            --data-urlencode "text=${MSG}"
 
       - uses: actions/download-artifact@v4
         with:
@@ -81,15 +79,13 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            ICON="✅"
-            STATUS="릴리즈 성공"
+            ICON="✅"; STATUS="릴리즈 성공"
+            LINK="${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
           else
-            ICON="❌"
-            STATUS="릴리즈 실패"
+            ICON="❌"; STATUS="릴리즈 실패"
+            LINK="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
+          MSG=$(printf "%s %s\n태그: ${{ github.ref_name }}\n레포: ${{ github.repository }}\n🔗 %s" "${ICON}" "${STATUS}" "${LINK}")
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             --data-urlencode "chat_id=-1003854517077" \
-            --data-urlencode "text=${ICON} ${STATUS}
-태그: ${{ github.ref_name }}
-레포: ${{ github.repository }}
-🔗 ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+            --data-urlencode "text=${MSG}"
