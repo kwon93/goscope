@@ -16,7 +16,7 @@ jobs:
           - os: windows-latest
             goarch: amd64
             output: goscope-windows-amd64.exe
-          - os: macos-latest   # Apple Silicon runner → arm64 네이티브
+          - os: macos-latest
             goarch: arm64
             output: goscope-darwin-arm64
 
@@ -41,6 +41,10 @@ jobs:
           echo "CGO_CFLAGS=-I C:/npcap-sdk/Include" >> $env:GITHUB_ENV
           echo "CGO_LDFLAGS=-L C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
         shell: pwsh
+
+      - name: 테스트 실행 (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: go test -count=1 ./...
 
       - name: Build
         env:
