@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/kwon93/goscope/internal/infrastructure/netif"
+	"github.com/kwon93/goscope/internal/netif"
 )
 
 // Config는 CLI 플래그와 인터랙티브 입력으로 결정되는 실행 설정이다.

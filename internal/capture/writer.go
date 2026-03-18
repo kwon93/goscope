@@ -1,4 +1,4 @@
-package pcap
+package capture
 
 import (
 	"context"
@@ -8,11 +8,9 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
-
-	"github.com/kwon93/goscope/internal/domain/packet"
 )
 
-// Writer는 패킷을 pcap 파일 포맷으로 기록하는 PacketSink 구현체다.
+// Writer는 패킷을 pcap 파일 포맷으로 기록하는 Sink 구현체다.
 type Writer struct {
 	w *pcapgo.Writer
 }
@@ -26,8 +24,8 @@ func NewWriter(w io.Writer) (*Writer, error) {
 	return &Writer{w: pw}, nil
 }
 
-// WritePacket은 domain.Packet을 pcap 레코드로 기록한다.
-func (wr *Writer) WritePacket(_ context.Context, pkt packet.Packet) error {
+// WritePacket은 Packet을 pcap 레코드로 기록한다.
+func (wr *Writer) WritePacket(_ context.Context, pkt Packet) error {
 	ci := gopacket.CaptureInfo{
 		Timestamp:     pkt.Timestamp,
 		CaptureLength: pkt.CaptureLen,

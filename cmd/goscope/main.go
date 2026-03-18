@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/kwon93/goscope/internal/adapter/cli"
+	"github.com/kwon93/goscope/internal/cli"
 )
 
 func main() {

@@ -1,15 +1,13 @@
-package presenter
+package capture
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/kwon93/goscope/internal/domain/packet"
 )
 
-// Terminal은 패킷을 사람이 읽을 수 있는 형태로 출력하는 PacketSink 구현체다.
+// Terminal은 패킷을 사람이 읽을 수 있는 형태로 출력하는 Sink 구현체다.
 type Terminal struct {
 	out io.Writer
 }
@@ -23,7 +21,7 @@ func NewTerminal(w io.Writer) *Terminal {
 }
 
 // WritePacket은 패킷 정보를 터미널에 한 줄로 출력한다.
-func (t *Terminal) WritePacket(_ context.Context, pkt packet.Packet) error {
+func (t *Terminal) WritePacket(_ context.Context, pkt Packet) error {
 	ts := pkt.Timestamp.Format("15:04:05")
 
 	portStr := ""

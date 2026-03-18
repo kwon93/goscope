@@ -1,13 +1,38 @@
-package pcap
+package capture
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-
-	"github.com/kwon93/goscope/internal/domain/packet"
 )
+
+func TestEngine_Capture_InvalidInterface(t *testing.T) {
+	e := NewEngine()
+	_, err := e.Capture(context.Background(), Request{
+		Interface: "nonexistent_iface_xyz",
+		Snaplen:   1600,
+		Promisc:   true,
+	})
+	if err == nil {
+		t.Fatal("Capture() with invalid interface: got nil error; want error")
+	}
+}
+
+func TestEngine_Capture_CancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := NewEngine().Capture(ctx, Request{
+		Interface: "nonexistent_iface_xyz",
+		Snaplen:   1600,
+		Promisc:   true,
+	})
+	if err == nil {
+		t.Fatal("Capture() with cancelled context and invalid interface: got nil error; want error")
+	}
+}
 
 // newRawIPv4TCP는 테스트용 IPv4+TCP raw bytes를 반환한다.
 // src: 192.168.0.1:54321 → dst: 8.8.8.8:80
@@ -65,7 +90,7 @@ func TestToDomainPacket_TCP(t *testing.T) {
 		got  any
 		want any
 	}{
-		{"Protocol", pkt.Protocol, packet.TCP},
+		{"Protocol", pkt.Protocol, TCP},
 		{"SrcAddr", pkt.SrcAddr, "192.168.0.1"},
 		{"DstAddr", pkt.DstAddr, "8.8.8.8"},
 		{"SrcPort", *pkt.SrcPort, uint16(54321)},
@@ -94,7 +119,7 @@ func TestToDomainPacket_UDP(t *testing.T) {
 		got  any
 		want any
 	}{
-		{"Protocol", pkt.Protocol, packet.UDP},
+		{"Protocol", pkt.Protocol, UDP},
 		{"SrcAddr", pkt.SrcAddr, "192.168.0.1"},
 		{"DstAddr", pkt.DstAddr, "8.8.8.8"},
 		{"DstPort", *pkt.DstPort, uint16(53)},
@@ -119,8 +144,6 @@ func TestToDomainPacket_NoNetworkLayer(t *testing.T) {
 }
 
 func TestToDomainPacket_ICMP_OtherProtocol(t *testing.T) {
-	// IPv4 + ICMP: NetworkLayer 있지만 TCP/UDP 없으므로 OTHER
-	// src: 192.168.0.1 → dst: 8.8.8.8, proto=ICMP(1)
 	raw := []byte{
 		// Ethernet
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -148,7 +171,7 @@ func TestToDomainPacket_ICMP_OtherProtocol(t *testing.T) {
 		got  any
 		want any
 	}{
-		{"Protocol", pkt.Protocol, packet.OTHER},
+		{"Protocol", pkt.Protocol, OTHER},
 		{"SrcAddr", pkt.SrcAddr, "192.168.0.1"},
 		{"DstAddr", pkt.DstAddr, "8.8.8.8"},
 	}
@@ -160,7 +183,6 @@ func TestToDomainPacket_ICMP_OtherProtocol(t *testing.T) {
 		})
 	}
 
-	// OTHER 프로토콜은 포트가 nil이어야 한다.
 	if pkt.SrcPort != nil {
 		t.Fatalf("ICMP SrcPort = %v; want nil", *pkt.SrcPort)
 	}
@@ -170,7 +192,6 @@ func TestToDomainPacket_ICMP_OtherProtocol(t *testing.T) {
 }
 
 func TestToDomainPacket_PreservesRawData(t *testing.T) {
-	// 원본 raw bytes가 RawData에 그대로 보존되어야 한다.
 	rawBytes := newRawIPv4TCP()
 	goPkt := gopacket.NewPacket(rawBytes, layers.LayerTypeEthernet, gopacket.Default)
 	pkt, ok := toDomainPacket(goPkt)
@@ -187,7 +208,6 @@ func TestToDomainPacket_PreservesRawData(t *testing.T) {
 }
 
 func TestToDomainPacket_CaptureMetadata(t *testing.T) {
-	// CaptureLen과 OriginalLen이 0 이상으로 설정되어야 한다.
 	goPkt := gopacket.NewPacket(newRawIPv4TCP(), layers.LayerTypeEthernet, gopacket.Default)
 	pkt, ok := toDomainPacket(goPkt)
 

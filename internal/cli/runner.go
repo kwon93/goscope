@@ -6,13 +6,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/kwon93/goscope/internal/adapter/presenter"
-	"github.com/kwon93/goscope/internal/app"
-	domcapture "github.com/kwon93/goscope/internal/domain/capture"
-	infpcap "github.com/kwon93/goscope/internal/infrastructure/pcap"
+	"github.com/kwon93/goscope/internal/capture"
 )
 
-// Run은 CLI 인자를 파싱하고 의존성을 조립한 뒤 유스케이스를 실행한다.
+// Run은 CLI 인자를 파싱하고 의존성을 조립한 뒤 패킷 캡처를 실행한다.
 // 종료 코드를 반환한다.
 func Run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer) int {
 	cfg, err := ParseConfig(args, in, out)
@@ -28,13 +25,8 @@ func Run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer
 	}
 	defer cleanup()
 
-	uc := app.CapturePackets{
-		Source: infpcap.NewEngine(),
-		Sinks:  sinks,
-	}
-
 	fmt.Fprintln(out, "패킷 캡처 시작 (Ctrl+C를 눌러 종료하세요)")
-	if err := uc.Run(ctx, app.CapturePacketsInput{
+	if err := capture.Run(ctx, capture.NewEngine(), sinks, capture.Request{
 		Interface: cfg.Interface,
 		Filter:    cfg.Filter,
 		Snaplen:   cfg.Snaplen,
@@ -46,9 +38,9 @@ func Run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer
 	return 0
 }
 
-// buildSinks는 Config를 기반으로 PacketSink 목록과 정리 함수를 반환한다.
-func buildSinks(cfg Config, out io.Writer) ([]domcapture.PacketSink, func(), error) {
-	sinks := []domcapture.PacketSink{presenter.NewTerminal(out)}
+// buildSinks는 Config를 기반으로 Sink 목록과 정리 함수를 반환한다.
+func buildSinks(cfg Config, out io.Writer) ([]capture.Sink, func(), error) {
+	sinks := []capture.Sink{capture.NewTerminal(out)}
 	cleanup := func() {}
 
 	if cfg.OutFile == "" {
@@ -60,7 +52,7 @@ func buildSinks(cfg Config, out io.Writer) ([]domcapture.PacketSink, func(), err
 		return nil, nil, fmt.Errorf("파일 생성 실패: %w", err)
 	}
 
-	w, err := infpcap.NewWriter(f)
+	w, err := capture.NewWriter(f)
 	if err != nil {
 		f.Close()
 		return nil, nil, fmt.Errorf("pcap writer 초기화 실패: %w", err)
