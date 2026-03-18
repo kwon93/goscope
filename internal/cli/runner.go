@@ -9,10 +9,10 @@ import (
 	"github.com/kwon93/goscope/internal/capture"
 )
 
-// Run은 CLI 인자를 파싱하고 의존성을 조립한 뒤 패킷 캡처를 실행한다.
+// Run은 대화형 입력으로 설정을 받고 의존성을 조립한 뒤 패킷 캡처를 실행한다.
 // 종료 코드를 반환한다.
-func Run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer) int {
-	cfg, err := ParseConfig(args, in, out)
+func Run(ctx context.Context, in io.Reader, out, errOut io.Writer) int {
+	cfg, err := ParseConfig(in, out)
 	if err != nil {
 		fmt.Fprintf(errOut, "설정 오류: %v\n", err)
 		return 1
