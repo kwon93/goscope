@@ -12,6 +12,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: 텔레그램 알림 (시작)
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            --data-urlencode "chat_id=-1003854517077" \
+            --data-urlencode "text=🔄 테스트 시작
+레포: ${{ github.repository }}
+브랜치: ${{ github.ref_name }}
+커밋: ${{ github.event.head_commit.message }}
+🔗 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
       - name: 코드 체크아웃
         uses: actions/checkout@v4
 
@@ -81,3 +91,21 @@ jobs:
       - name: 테스트 실패 시 종료
         if: steps.run_tests.outputs.exit_code != '0'
         run: exit 1
+
+      - name: 텔레그램 알림 (결과)
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            ICON="✅"
+            STATUS="테스트 통과"
+          else
+            ICON="❌"
+            STATUS="테스트 실패"
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            --data-urlencode "chat_id=-1003854517077" \
+            --data-urlencode "text=${ICON} ${STATUS}
+레포: ${{ github.repository }}
+브랜치: ${{ github.ref_name }}
+커밋: ${{ github.event.head_commit.message }}
+🔗 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
