@@ -23,6 +23,15 @@ Go로 개발한 CLI 기반 네트워크 패킷 분석 도구.
 | macOS (Apple Silicon) | `goscope-darwin-arm64` |
 | Windows | `goscope-windows-amd64.exe` |
 
+> **macOS 실행 시 "신뢰할 수 없는 개발자" 경고가 뜨는 경우**
+>
+> 서명되지 않은 바이너리는 macOS Gatekeeper가 차단합니다. 터미널에서 아래 명령어로 격리 속성을 제거한 후 실행하세요.
+>
+> ```bash
+> xattr -dr com.apple.quarantine ./goscope-darwin-arm64
+> sudo ./goscope-darwin-arm64
+> ```
+
 **직접 빌드**
 
 ```bash
