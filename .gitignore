@@ -40,3 +40,6 @@ dist/
 
 goscope
 goscope.exe
+
+# bkit AI dev toolkit state (contains local paths, session data)
+.bkit/
