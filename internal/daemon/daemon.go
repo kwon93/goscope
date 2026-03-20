@@ -51,7 +51,7 @@ func Daemonize(cfgJSON string) error {
 
 // WritePID는 현재 프로세스의 PID를 파일에 기록한다.
 func WritePID() error {
-	return os.WriteFile(impl.pidFile(), []byte(strconv.Itoa(os.Getpid())), 0644)
+	return os.WriteFile(impl.pidFile(), []byte(strconv.Itoa(os.Getpid())), 0600)
 }
 
 // CleanPID는 PID 파일을 삭제한다.

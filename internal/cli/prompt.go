@@ -140,6 +140,9 @@ func promptOutFile(in io.Reader, out io.Writer) (string, error) {
 	if strings.ContainsAny(name, "\x00") {
 		return "", fmt.Errorf("파일명에 사용할 수 없는 문자가 포함되어 있습니다")
 	}
+	if strings.Contains(name, "..") {
+		return "", fmt.Errorf("파일명에 경로 순회 문자가 포함되어 있습니다")
+	}
 	if name != "" && !strings.HasSuffix(name, ".pcap") {
 		name += ".pcap"
 	}
@@ -155,6 +158,9 @@ func promptRotateDir(reader *bufio.Reader, out io.Writer) (string, error) {
 	dir := strings.TrimSpace(line)
 	if dir == "" {
 		dir = "."
+	}
+	if strings.Contains(dir, "..") {
+		return "", fmt.Errorf("디렉터리 경로에 경로 순회 문자가 포함되어 있습니다")
 	}
 	return dir, nil
 }

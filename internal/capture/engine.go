@@ -80,7 +80,7 @@ func toDomainPacket(raw gopacket.Packet) (Packet, bool) {
 		Protocol:    OTHER,
 		SrcAddr:     src.String(),
 		DstAddr:     dst.String(),
-		RawData:     raw.Data(),
+		RawData:     append([]byte(nil), raw.Data()...),
 		CaptureLen:  ci.CaptureLength,
 		OriginalLen: ci.Length,
 	}

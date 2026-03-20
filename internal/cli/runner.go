@@ -107,7 +107,7 @@ func handleStop(errOut io.Writer) int {
 		fmt.Fprintf(errOut, "중지 실패: %v\n", err)
 		return 1
 	}
-	fmt.Println("캡처가 중지되었습니다.")
+	fmt.Fprintln(errOut, "캡처가 중지되었습니다.")
 	return 0
 }
 
@@ -120,7 +120,7 @@ func buildSinks(cfg Config, out io.Writer) ([]capture.Sink, func(), error) {
 	}
 
 	if cfg.OutFile != "" {
-		f, err := os.Create(cfg.OutFile)
+		f, err := os.OpenFile(cfg.OutFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return nil, nil, fmt.Errorf("파일 생성 실패: %w", err)
 		}

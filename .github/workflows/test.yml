@@ -25,7 +25,11 @@ jobs:
 
       - name: 테스트 실행
         id: run_tests
-        run: go test -v -count=1 -json ./... > test-output.json 2>&1; echo "exit_code=$?" >> $GITHUB_OUTPUT
+        run: go test -race -v -count=1 -json -coverprofile=coverage.out ./... > test-output.json 2>&1; echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: 커버리지 요약
+        if: always()
+        run: go tool cover -func=coverage.out | tail -1
 
       - name: 테스트 결과 요약
         if: always()

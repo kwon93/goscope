@@ -59,10 +59,12 @@ func (r *RotatingWriter) Close() error {
 // rotate는 현재 파일을 닫고 새 파일을 연다. mu를 이미 보유한 상태에서 호출한다.
 func (r *RotatingWriter) rotate() error {
 	if r.current != nil {
-		r.current.Close()
+		if err := r.current.Close(); err != nil {
+			return fmt.Errorf("rotate: close previous file: %w", err)
+		}
 	}
 
-	if err := os.MkdirAll(r.dir, 0755); err != nil {
+	if err := os.MkdirAll(r.dir, 0700); err != nil {
 		return fmt.Errorf("rotate: mkdir %q: %w", r.dir, err)
 	}
 
@@ -71,7 +73,7 @@ func (r *RotatingWriter) rotate() error {
 	name := fmt.Sprintf("%s_%s.pcap", r.prefix, boundary.Format("2006-01-02T15-04-05"))
 	path := filepath.Join(r.dir, name)
 
-	f, err := os.Create(path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("rotate: create %q: %w", path, err)
 	}

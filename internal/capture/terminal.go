@@ -24,12 +24,15 @@ func NewTerminal(w io.Writer) *Terminal {
 func (t *Terminal) WritePacket(_ context.Context, pkt Packet) error {
 	ts := pkt.Timestamp.Format("15:04:05")
 
-	portStr := ""
-	if pkt.SrcPort != nil && pkt.DstPort != nil {
-		portStr = fmt.Sprintf(":%d -> %d", *pkt.SrcPort, *pkt.DstPort)
+	src := pkt.SrcAddr
+	dst := pkt.DstAddr
+	if pkt.SrcPort != nil {
+		src = fmt.Sprintf("%s:%d", pkt.SrcAddr, *pkt.SrcPort)
+	}
+	if pkt.DstPort != nil {
+		dst = fmt.Sprintf("%s:%d", pkt.DstAddr, *pkt.DstPort)
 	}
 
-	fmt.Fprintf(t.out, "[%s] %s  %s%s → %s\n",
-		ts, pkt.Protocol, pkt.SrcAddr, portStr, pkt.DstAddr)
+	fmt.Fprintf(t.out, "[%s] %s  %s → %s\n", ts, pkt.Protocol, src, dst)
 	return nil
 }
