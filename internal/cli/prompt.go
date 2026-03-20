@@ -25,6 +25,8 @@ type Config struct {
 	Background     bool
 	Snaplen        int32
 	Promisc        bool
+	TimerStart     time.Time
+	TimerEnd       time.Time
 }
 
 // ParseConfig는 in/out으로 사용자 입력을 받아 Config를 반환한다.
@@ -54,6 +56,13 @@ func ParseConfig(in io.Reader, out io.Writer) (Config, error) {
 		return Config{}, err
 	}
 	cfg.Filter = filter
+
+	start, end, err := promptTimer(in, out)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.TimerStart = start
+	cfg.TimerEnd = end
 
 	if cfg.RotateDir != "" {
 		bg, err := promptBackground(in, out)
@@ -227,5 +236,60 @@ func promptFilter(in io.Reader, out io.Writer) (string, error) {
 			continue
 		}
 		return filter, nil
+	}
+}
+
+// promptTimer는 선택적 캡처 시간대를 입력받는다.
+// 설정하지 않으면 zero value를 반환한다.
+func promptTimer(in io.Reader, out io.Writer) (start, end time.Time, err error) {
+	fmt.Fprint(out, "타이머를 설정하시겠습니까? [y/N]: ")
+	reader := bufio.NewReader(in)
+	line, err := reader.ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return time.Time{}, time.Time{}, fmt.Errorf("타이머 입력 오류: %w", err)
+	}
+	if !strings.EqualFold(strings.TrimSpace(line), "y") {
+		return time.Time{}, time.Time{}, nil
+	}
+
+	start, err = promptTimeInput(reader, out, "시작 시각 (예: 14:00, 생략 시 즉시 시작): ", true)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	end, err = promptTimeInput(reader, out, "종료 시각 (예: 15:00): ", false)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	if !end.IsZero() && !start.IsZero() && !end.After(start) {
+		end = end.Add(24 * time.Hour)
+	}
+
+	return start, end, nil
+}
+
+func promptTimeInput(reader *bufio.Reader, out io.Writer, prompt string, optional bool) (time.Time, error) {
+	now := time.Now()
+	for {
+		fmt.Fprint(out, prompt)
+		line, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			return time.Time{}, fmt.Errorf("시각 입력 오류: %w", err)
+		}
+		s := strings.TrimSpace(line)
+		if s == "" && optional {
+			return time.Time{}, nil
+		}
+		t, err := time.Parse("15:04", s)
+		if err != nil {
+			fmt.Fprintln(out, "HH:MM 형식으로 입력하세요 (예: 14:00).")
+			continue
+		}
+		result := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, now.Location())
+		if result.Before(now) {
+			result = result.Add(24 * time.Hour)
+		}
+		return result, nil
 	}
 }

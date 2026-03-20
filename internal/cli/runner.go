@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/kwon93/goscope/internal/capture"
 	"github.com/kwon93/goscope/internal/daemon"
@@ -58,10 +59,33 @@ func Run(ctx context.Context, in io.Reader, out, errOut io.Writer) int {
 	}
 	defer cleanup()
 
-	if !daemon.IsDaemon() {
-		fmt.Fprintln(out, "패킷 캡처 시작 (Ctrl+C를 눌러 종료하세요)")
+	if !cfg.TimerStart.IsZero() {
+		wait := time.Until(cfg.TimerStart)
+		if wait > 0 {
+			fmt.Fprintf(out, "캡처 시작까지 대기 중... (%s 시작)\n", cfg.TimerStart.Format("15:04"))
+			select {
+			case <-time.After(wait):
+			case <-ctx.Done():
+				return 0
+			}
+		}
 	}
-	if err := capture.Run(ctx, capture.NewEngine(), sinks, capture.Request{
+
+	captureCtx := ctx
+	if !cfg.TimerEnd.IsZero() {
+		var cancel context.CancelFunc
+		captureCtx, cancel = context.WithDeadline(ctx, cfg.TimerEnd)
+		defer cancel()
+	}
+
+	if !daemon.IsDaemon() {
+		if !cfg.TimerEnd.IsZero() {
+			fmt.Fprintf(out, "패킷 캡처 시작 (종료 시각: %s)\n", cfg.TimerEnd.Format("15:04"))
+		} else {
+			fmt.Fprintln(out, "패킷 캡처 시작 (Ctrl+C를 눌러 종료하세요)")
+		}
+	}
+	if err := capture.Run(captureCtx, capture.NewEngine(), sinks, capture.Request{
 		Interface: cfg.Interface,
 		Filter:    cfg.Filter,
 		Snaplen:   cfg.Snaplen,
